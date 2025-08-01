@@ -10,7 +10,6 @@ Original file is located at
 
 Integrantes da Equipe:
 - AYANNE ALMEIDA
-- AYRTON SANTOS
 - JOSÉ ALBERTO
 - CARLOS ALBERTO
 - PETRÔNIO DA SILVA
@@ -57,8 +56,6 @@ colunas_traducao = {
     'Horizontal_Distance_To_Fire_Points': 'Dist_Horiz_Pontos_Fogo'
 }
 
-# Se desejar, renomear também Wilderness_Area_* e Soil_Type_* individualmente:
-# Wilderness_Area_1..4 -> Area_Selvagem_1..4
 colunas_traducao.update({f'Wilderness_Area_{i}': f'Area_Selvagem_{i}' for i in range(1, 5)})
 # Soil_Type_1..40 -> Tipo_Solo_1..40
 colunas_traducao.update({f'Soil_Type_{i}': f'Tipo_Solo_{i}' for i in range(1, 41)})
@@ -157,7 +154,7 @@ def build_model(units_layer1=64, units_layer2=32, activation='relu', learning_ra
                                     kernel_regularizer=tf.keras.regularizers.l2(l2_reg)))
     if dropout_rate > 0.0:
         model.add(tf.keras.layers.Dropout(dropout_rate))
-    model.add(tf.keras.layers.Dense(7, activation='softmax'))  # 7 classes - Já qe são 7 tipos de vegetação
+    model.add(tf.keras.layers.Dense(7, activation='softmax'))  # 7 classes - Já que são 7 tipos de vegetação
 
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
                   loss='sparse_categorical_crossentropy',
@@ -224,11 +221,24 @@ test_preds = np.argmax(baseline_model.predict(X_test), axis=1)
 print(classification_report(y_test_encoded, test_preds, digits=3))
 print(confusion_matrix(y_test_encoded, test_preds))
 
-"""No geral, a análse confirma que a MLP básica aprende bem com os dados disponíveis e generaliza de forma estável.
+"""Esse resultado mostra que o modelo baseline treinado está apresentando um desempenho bom e estável, mas sofre com dificuldade em prever classes minoritárias (o que já era esperado pelo desbalanceamento).
 
-Loss por época: as curvas de perda de treino e de validação começam em valores relativamente altos (~0,60 e ~0,52) e caem de forma suave e consistente. A partir da 7ª/8ª época, elas praticamente se sobrepõem e continuam caindo até cerca de 0,35 na 20ª época. O fato de a perda de validação acompanhar de perto a de treino, sem divergência significativa, indica que o modelo está generalizando bem; não há sinais de que esteja memorizando o conjunto de treino.
+A maior parte dos acertos está concentrada na classe 0 (Lodgepole Pine), que domina os dados.
 
-Acurácia por época: ambas as curvas sobem rapidamente nas primeiras épocas, saindo de ~0,77 para 0,86. Ao longo do treinamento as linhas permanecem próximas uma da outra, com pequenas oscilações normais. A acurácia de validação chega a ficar um pouco acima da acurácia de treino em alguns pontos (por exemplo, por volta da época 14), mas a diferença é mínima e as curvas convergem para valores semelhantes no final. Isso reforça que não há overfitting: o modelo consegue manter desempenho semelhante nos dados não vistos.
+Algumas classes raras como 1, 2, 6 têm muitos falsos negativos, ou seja, o modelo erra bastante ao tentar reconhecê-las.
+
+**Loss por Época:**
+
+Tanto a curva de treino quanto a de validação diminuem continuamente, indicando que o modelo está aprendendo.
+
+A perda não diverge entre treino e validação, o que sugere que não há overfitting significativo.
+
+Acurácia por Época:
+**texto en negrita**
+A acurácia sobe de forma consistente até ~86%, em ambos os conjuntos.
+
+O modelo está generalizando bem para os dados de validação.
+
 
 Estabilidade: não há grandes saltos ou oscilações abruptas, o que sugere que a taxa de aprendizado e o tamanho do lote estão adequados. As pequenas variações na val_loss e val_accuracy nas épocas finais são normais e não indicam overfitting.
 
@@ -269,7 +279,16 @@ test_preds_deep_relu = np.argmax(deep_relu_model.predict(X_test), axis=1)
 print(classification_report(y_test_encoded, test_preds_deep_relu, digits=3))
 plot_learning_curves(history_deep_relu, 'Deep ReLU (3 camadas)')
 
-"""**2. Função de ativação diferente (tanh)**"""
+"""O modelo melhorou em todas as métricas, especialmente em recall e F1-score nas classes minoritárias:
+
+Classe 1 (Cottonwood/Willow): F1 passou de 0.745 → 0.766
+
+Classe 6 (Aspen): F1 passou de 0.563 → 0.744
+
+Isso mostra que a rede mais profunda consegue aprender melhor os padrões das classes menos representadas, que eram um desafio no modelo anterior.
+
+**2. Função de ativação diferente (tanh)**
+"""
 
 def build_tanh_model():
     model = tf.keras.Sequential([
@@ -300,7 +319,11 @@ test_preds_tanh = np.argmax(tanh_model.predict(X_test), axis=1)
 print(classification_report(y_test_encoded, test_preds_tanh, digits=3))
 plot_learning_curves(history_tanh, 'Ativação tanh (3 camadas)')
 
-"""Não existem grandes separações entre as curvas de treno e de validação. Isso sugere que não há overfitting
+"""Todas as métricas aumentaram, o que mostra que a função de ativação tanh ajudou a rede a capturar ainda melhor os padrões nos dados, especialmente nas classes minoritárias:
+
+Classe 1 (Cottonwood/Willow): F1-score foi de 0.766 → 0.793
+
+Classe 6 (Aspen): F1-score foi de 0.744 → 0.795
 
 **4. Taxa de aprendizado diferente (learning_rate = 0,01)**
 """
@@ -333,7 +356,15 @@ test_preds_high_lr = np.argmax(high_lr_model.predict(X_test), axis=1)
 print(classification_report(y_test_encoded, test_preds_high_lr, digits=3))
 plot_learning_curves(history_high_lr, 'Learning Rate 0.01')
 
-"""**5. Tamanho de batch maior e mais épocas**
+"""O desempenho caiu com o aumento da learning rate, especialmente nas classes minoritárias:
+
+Classe 1: F1-score caiu de 0.793 (com tanh) para 0.665
+
+Classe 6: F1 caiu de 0.795 para 0.621
+
+Ao aumentar a taxa de aprendizado para 0,01, o treinamento se tornou mais rápido nas primeiras épocas, mas o desempenho final foi inferior.
+
+**5. Tamanho de batch maior e mais épocas**
 
 o batch de 512 foi testado por ser uma escolha técnica comum e computacionalmente eficiente, mas seus resultados mostraram que ele não melhora o desempenho nesse caso específico.
 """
@@ -366,7 +397,18 @@ test_preds_large_batch = np.argmax(large_batch_model.predict(X_test), axis=1)
 print(classification_report(y_test_encoded, test_preds_large_batch, digits=3))
 plot_learning_curves(history_large_batch, 'Batch 512 + 40 épocas')
 
-"""**Comparando os resultados**"""
+"""A utilização de um tamanho de batch maior (512) e aumento no número de épocas (40) resultou em curvas de aprendizagem mais suaves e treinamento estável. No entanto, o desempenho final não superou configurações anteriores
+
+Acurácia: 0.856 → igual à do baseline (com batch menor).
+
+F1-score (macro): 0.775 → abaixo da versão com função tanh e 3 camadas (que teve 0.873).
+
+Classe 6, por exemplo, segue com F1-score muito baixo (0.587), indicando dificuldade com classes minoritárias.
+
+O desempenho geral não melhorou, mesmo com mais tempo de treinamento.
+
+**Comparando os resultados**
+"""
 
 import pandas as pd
 
@@ -388,17 +430,20 @@ summary = pd.DataFrame({
 
 display(summary)
 
-"""Conclusões a partir do s comparativos:
+"""# **Conclusões**
 
-Tanh: foi a configuração que mais se destacou, com acurácia em torno de 92,5% e F1 macro de 0,873. Isso sugere que substituir a ReLU por tanh nas camadas ocultas ajudou a rede a capturar melhor as relações entre as variáveis e a classificar as classes menos frequentes, elevando tanto o desempenho geral quanto a média de F1.
+Neste projeto, testamos diferentes configurações de redes neurais MLP aplicadas ao problema de classificação de cobertura vegetal, utilizando o conjunto de dados do UCI (Covertype). Os experimentos variaram número de camadas, funções de ativação, taxa de aprendizado, tamanho de batch e número de épocas, permitindo observar como cada hiperparâmetro impacta o desempenho do modelo.
 
-Deep ReLU: o modelo mais profundo (128→64→32 neurônios, todas com ReLU) melhorou consideravelmente em relação ao baseline, alcançando acurácia de ~89,5% e F1 macro de 0,839. A maior profundidade permite representar padrões mais complexos, mas não chegou ao mesmo nível do tanh.
+-A rede baseline (2 camadas ocultas, ReLU, LR=0.001, 20 épocas) já apresentou bom desempenho inicial, com acurácia de 0.856 e F1-score macro de 0.747, mas mostrou limitações com classes minoritárias.
 
-Baseline: mantém acurácia de ~85,6% e F1 macro de 0,779, servindo como referência inicial.
+-Ao aprofundar a rede (3 camadas) mantendo a ReLU, houve ganho relevante: acurácia subiu para 0.895 e F1-score macro para 0.839, indicando que a profundidade melhorou a capacidade de generalização.
 
-Aprendizado com taxa alta (lr_0.01): com learning rate elevado (0,01), o modelo não melhora, ficando praticamente no nível do baseline (acurácia ~86,1%, F1 macro ~0,771). Isso indica que o passo de atualização grande demais dificultou a convergência.
+-A substituição da função de ativação por tanh trouxe os melhores resultados do experimento: acurácia de 0.925 e F1-score macro de 0.873, com curvas de aprendizagem mais consistentes e sem sinais de overfitting, mesmo com 30 épocas.
 
-Batch grande (batch_512): usar batch size de 512 e mais épocas produziu desempenho equivalente ao baseline (acurácia ~85,6% e F1 macro ~0,775), sugerindo que lotes muito grandes podem reduzir a variabilidade do gradiente sem ganhos de generalização.
+-Aumentar apenas a taxa de aprendizado (0.01) reduziu o tempo de convergência, mas também piorou o desempenho final (F1-score macro de 0.771), sugerindo que um passo muito grande nas atualizações pode comprometer a qualidade do ajuste.
+
+-O uso de batch maior (512) e 40 épocas trouxe estabilidade às curvas, mas não resultou em melhoria significativa nas métricas, indicando que o modelo atingiu um limite com essa configuração.
+
 
 De acordo com esses insigths,  profundidade e escolha da função de ativação são os fatores que mais impactaram positivamente a performance. As configurações com tanh e com rede mais profunda apresentaram os maiores ganhos, tanto em acurácia quanto em F1 macro, enquanto ajustes isolados na taxa de aprendizado ou tamanho do batch não trouxeram melhorias.
 """

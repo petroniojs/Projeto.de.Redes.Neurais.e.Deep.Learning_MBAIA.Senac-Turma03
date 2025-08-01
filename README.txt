@@ -1,5 +1,5 @@
 # Nome da Equipe
-4.A.P.1
+3.A.P.1
 
 ## Título do Projeto
 DeepPredictor – Classificação de Cobertura Florestal com MLP
@@ -9,7 +9,6 @@ As florestas são biomas importantes para a preservação do planeta, mas com os
 
 ## Integrantes da Equipe
 - AYANNE
-- AYRTON
 - JOSÉ ALBERTO
 - CARLOS ALBERTO
 - PETRÔNIO
@@ -27,7 +26,7 @@ Link: https://archive.ics.uci.edu/dataset/31/covertype
 <https://colab.research.google.com/drive/1EpCCHL_WMa6eBTkLrPLIeaQdvcOF0vsx?usp=sharing>
 
 ## Link para o Notebook no Github
-<https://github.com/petroniojs/Projeto.de.Redes.Neurais.e.Deep.Learning_MBAIA.Senac-Turma03>
+<>
 
 ## Descrição Breve
 Este projeto implementa uma MLP para classificação de pixels em 7 tipos de cobertura florestal com base em atributos como elevação, aspecto, declive, sombreamento, tipo de solo entre outros, explorando diferentes arquiteturas e hiperparâmetros.
